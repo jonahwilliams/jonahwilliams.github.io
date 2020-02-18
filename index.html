@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
     <head>
-        <title>Web Worker Compiler Demo</title>
+        <title>In-Browser Compiler Demo</title>
     </head>
     <body>
         <script src="dart_library.js">s</script>
@@ -9,9 +9,11 @@
         <button id="compile-it">Compile</button>
         <button id="refresh-source">Refresh</button>
         <textarea id="input-dart" rows="20" cols="80">
-            void main() {
-                print('hello, world');
-            }
+import 'dart:html';
+
+void main() {
+  alert('hello, world');
+}
         </textarea>
         <textarea id="output-dart" rows="20" cols="80">
         </textarea>
