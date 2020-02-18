@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Web Worker Compiler Demo</title>
+    </head>
+    <body>
+        <script src="dart_library.js">s</script>
+        <script src="compiler.js"></script>
+        <button id="compile-it">Compile</button>
+        <button id="refresh-source">Refresh</button>
+        <textarea id="input-dart" rows="20" cols="80">
+            void main() {
+                print('hello, world');
+            }
+        </textarea>
+        <textarea id="output-dart" rows="20" cols="80">
+        </textarea>
+        <script>
+            var req = new XMLHttpRequest();
+            req.addEventListener("load", function(e) {
+                new Function(req.responseText)();
+            });
+            req.open("GET", "dart_sdk.js");
+            req.send();
+
+            window.compileMessage('compile package:hello_world/main.dart');
+            var button = document.getElementById('compile-it');
+            var code = document.getElementById('input-dart');
+            var output = document.getElementById('output-dart');
+            var counter = 0;
+            button.onclick = function(e) {
+                var text = code.value;
+                var boundary = '73fc216d-d46a-48be-9375-32f93838ea6' + counter;
+                window.writeFile('lib/main.dart', text);
+                window.compileMessage('recompile package:hello_world/main.dart ' + boundary);
+                window.compileMessage('package:hello_world/main.dart');
+                window.compileMessage(boundary.toString());
+                counter += 1;
+            };
+
+            var refreshButton = document.getElementById('refresh-source');
+            refreshButton.onclick = function(e) {
+                var content = window.readFile('app.dill.incremental.dill.sources');
+                output.textContent =  content;
+                new Function(content)();
+                dart_library.start('/packages/hello_world/main.dart', 'main');
+            };
+        </script>
+    </body>
+</html>
