@@ -1,5 +1,5 @@
 'use strict';
-const version = '0.0.1';
+const version = '0.0.2';
 
 self.addEventListener('install', function(event) {
     self.skipWaiting();
