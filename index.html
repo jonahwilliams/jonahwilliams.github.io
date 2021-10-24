@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="scaffolded-by" content="https://github.com/dart-lang/sdk">
-    <title>dart_gl_experiments</title>
+    <title>The Something of Something</title>
     <link rel="stylesheet" href="styles.css">
     <script defer src="main.dart.js"></script>
 </head>
@@ -14,12 +15,25 @@
     <canvas id="glCanvas" width="2400" height="1440"></canvas>
     <script type="application/javascript">
         'use strict';
-
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {
-                navigator.serviceWorker.register('/service_worker.js');
+                navigator.serviceWorker.register('/service_worker.js').then(reg => {
+                    reg.addEventListener('updatefound', () => {
+                        var newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            switch (newWorker.state) {
+                                case 'installed':
+                                    if (navigator.serviceWorker.controller) {
+                                        window.alert('New Version Available (Refresh)');
+                                    }
+                                    break;
+                            }
+                        });
+                    });
+                });
             });
         }
     </script>
 </body>
+
 </html>
