@@ -12,7 +12,23 @@
 </head>
 
 <body>
-    <canvas id="glCanvas"></canvas>
+    <div id="myModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <p>Some text in the Modal..</p>
+    </div>
+    </div>
+    <div id="root">
+        <canvas id="glCanvas"></canvas>
+        <div id="action_bar">
+        </div>
+    </div>
+    <script>
+        window.secretPlayAudio = function (x) {
+            var audio = new Audio(x);
+            return audio.play();
+        }
+    </script>
     <script type="application/javascript">
         'use strict';
         if ('serviceWorker' in navigator) {
