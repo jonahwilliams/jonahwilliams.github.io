@@ -36,9 +36,6 @@ html, body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  border-style: outset;
-  border-color: #444;
-  border-width: 4px;
   background-color: #101010;
   color: #FAFAFA;
   font-size: 8pt;
@@ -48,9 +45,6 @@ html, body {
 #star_bar {
   width: 100%;
   height: 40px;
-  border-style: outset;
-  border-color: #444;
-  border-width: 4px;
   background-color: #101010;
   color: #FAFAFA;
   font-size: 8pt;
@@ -73,7 +67,6 @@ html, body {
   background-color: #fefefe;
   margin: 15% auto;
   padding: 20px;
-  border: 1px solid #333;
   width: 80%;
 }
 
