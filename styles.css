@@ -32,62 +32,7 @@ html, body {
   justify-content: flex-start;
 }
 
-#action_bar {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background-color: #101010;
-  color: #FAFAFA;
-  font-size: 8pt;
-  margin: 0;
-}
-
-#star_bar {
-  width: 100%;
-  height: 40px;
-  background-color: #101010;
-  color: #FAFAFA;
-  font-size: 8pt;
-  margin: 0;
-}
-
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 20;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
-}
-
-.modal-content {
-  background-color: #fefefe;
-  margin: 15% auto;
-  padding: 20px;
-  width: 80%;
-}
-
-#text {
-  width: 100%;
-  position: absolute;
-  z-index: 10;
-}
 
 #glCanvas {
   width: 100%;
-}
-
-#health_bar {
-  width: 80%;
-  background-color: red;
-  height: 18px;
-}
-
-#exp_bar {
-  width: 80%;
-  background-color: purple;
-  height: 8px;
 }
