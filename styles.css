@@ -17,6 +17,15 @@ html, body {
   font-family: 'Press Start 2P';
 }
 
+#loading {
+  color: white;
+  font-size: 48px;
+  margin: auto;
+  width: 50%;
+  text-align: center;
+  padding-top: 100px;
+}
+
 #root {
   display: flex;
   flex-direction: column;
