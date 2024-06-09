@@ -1,0 +1,97 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>The Blog</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+  <h1>Mobile Rendering Basics</h1>
+
+  <p>Mobile GPUs work differently from traditional discrete GPUs. For a fun overview, ARM has a manga guide to their
+    mobile GPUs, <a href="https://interactive.arm.com/story/the-arm-manga-guide-to-the-mali-gpu/page/1">The Arm Manga
+      Guide to the Mali GPU</a>. Mobile GPUs rasterize small sections of the framebuffer (called
+    "tiles") one after the other, rather than rasterize primitives across the entire framebuffer. These tiles might be
+    as small as 8x8 or 16x16 pixels. In Psuedocode, the
+    difference
+    between mobile GPUs and destop GPUs comes down to:</p>
+
+  <b>Desktop</b>
+  <p class="code">
+    for (var triangle in triangles):<br>
+    &nbsp;&nbsp;for (var fragment in triangle):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment)<br>
+
+  </p>
+
+  <b>Mobile</b>
+  <p class="code">for (var tile in tiles):<br>
+    &nbsp;&nbsp;for (var triangle in triangles):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;if (triangle in tile):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment)<br>
+  </p>
+
+  <p>While the mobile approach seems more complicated, it allows for more efficient memory access patterns. In the
+    desktop approach,
+    a triangle that coverages a large % of the framebuffer will require writes across large regions of the backing
+    memory. By binning the geometry by tile, the GPU enforces a localization of writes.
+
+    A second important difference: in the desktop case, the writes and reads happen from video memory. Mobile GPUs add
+    an additional on-chip cache that
+    is only loaded and flushed once during processing of the tile. This further improves efficiency due to the locality
+    of this cache. A
+  </p>
+
+  <p class="code">for (var tile in tiles):<br>
+    &nbsp;&nbsp;var tile_memory = load(video_memory, load_action):<br>
+    &nbsp;&nbsp;for (var triangle in triangles):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;if (triangle in tile):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment, tile_memory)<br>
+    &nbsp;&nbsp;store(video_memory, tile_memory, store_action)<br>
+  </p>
+
+  <p>Much of the performance work for mobile focuses on exploiting the usage of the tile memory. For example,
+    Multisample Anti-Aliasing (MSAA) is an anti-aliasing technique where N coverage samples are stored per pixel. At the
+    end of a render pass, the N coverage samples per pixels are "resolved" (averaged) into a single sample. On a
+    traditional desktop GPU 4x MSAA requires allocating textures that are 4x the size of a non-MSAA texture. on a mobile
+    tile-based
+    deferred renderer (TBDR), the 4x samples are only stored in tile memory and are resolved during the flush to video
+    memory. As a result, 4x MSAA is "free" (from a memory perspective) on TBDR architectures.
+  </p>
+
+  <h3>Programmable Blending</h3>
+  <p>
+    Because the tile memory is on-chip and easily accessible, reads are much faster than they would be from video
+    memory. Some vendors expose the capability to read the color value of the current framebuffer. This is called
+    <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_shader_framebuffer_fetch.txt">framebuffer fetch</a>
+    on GLES
+    drivers. With access to the framebuffer value, arbitrary blend equations (beyond the available fixed set Porter-Duff
+    blends) can be
+    implemented, such as the "Photoshop" blend modes like "color burn" or "color dodge."
+  </p>
+  <p class="code">
+    #extension GL_EXT_shader_framebuffer_fetch: require<br>
+    <br>
+    in vec4 v_color;<br>
+    <br>
+    out vec4 frag_color;<br>
+    <br>
+    void main() {<br>
+    &nbsp;&nbsp;frag_color = Blend(v_color, gl_LastFragData);<br>
+    }<br>
+  </p>
+
+  <p>The alternative to framebuffer fetch requires multiple render passes: first everything before the blend must be
+    rendered to an offscreen, then fed through the blend shader and rendered to the onscreen framebuffer. This requires
+    a substantial amount of video memory throughput as the entire framebuffer has to be round tripped through video
+    memory.</p>
+
+  <aside>Note: While blending using fixed equations may be implemented as a read from video memory, it doesn't necessarily
+    imply that the fragment processor is reading from video memory.</aside>
+
+</body>
+
+</html>
