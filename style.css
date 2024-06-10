@@ -4,3 +4,18 @@
     background-color: rgb(247, 232, 212);
     padding: 14px;
 }
+
+.title {
+    text-align:center;
+}
+
+.blog-title {
+    font-size: 24;
+}
+
+@media screen and (min-width: 800px) {
+    body {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+}

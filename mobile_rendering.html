@@ -4,52 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>The Blog</title>
+  <title>Tile-Based Deferred Renderers (TBDR) PT 1</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <h1>Mobile Rendering Basics</h1>
+  <nav>
+    <a href="/">The Jonah Blog</a> |
+    <a href="https://github.com/jonahwilliams">Github</a> |
+    <a href="https://github.com/jonahwilliams/jonahwilliams.github.io">Blog Source</a>
+  </nav>
+
+  <hr>
+
+  <h1 class="title">Tile-Based Deferred Renderers (TBDR) Pt 1</h1>
+
+  <h3>Background</h3>
 
   <p>Mobile GPUs work differently from traditional discrete GPUs. For a fun overview, ARM has a manga guide to their
     mobile GPUs, <a href="https://interactive.arm.com/story/the-arm-manga-guide-to-the-mali-gpu/page/1">The Arm Manga
-      Guide to the Mali GPU</a>. Mobile GPUs rasterize small sections of the framebuffer (called
-    "tiles") one after the other, rather than rasterize primitives across the entire framebuffer. These tiles might be
-    as small as 8x8 or 16x16 pixels. In Psuedocode, the
-    difference
-    between mobile GPUs and destop GPUs comes down to:</p>
+      Guide to the Mali GPU</a>. Mobile GPUs rasterize binned geometry in discrete sections of the framebuffer (called
+    "tiles") independently, rather than process primitives across the entire framebuffer. These tiles might be
+    as small as 8x8 or 16x16 pixels. In Psuedocode, the difference between mobile GPUs and destop GPUs comes down to</p>
 
   <b>Desktop</b>
   <p class="code">
     for (var triangle in triangles):<br>
     &nbsp;&nbsp;for (var fragment in triangle):<br>
     &nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment)<br>
-
   </p>
 
   <b>Mobile</b>
-  <p class="code">for (var tile in tiles):<br>
-    &nbsp;&nbsp;for (var triangle in triangles):<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;if (triangle in tile):<br>
+  <p class="code">
+    for (var tile in tiles):<br>
+    &nbsp;&nbsp;for (var triangle in triangles where triangle in tile):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;for (var fragment in triangle):<br>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment)<br>
   </p>
 
   <p>While the mobile approach seems more complicated, it allows for more efficient memory access patterns. In the
-    desktop approach,
-    a triangle that coverages a large % of the framebuffer will require writes across large regions of the backing
+    desktop approach, a triangle that coverages a large % of the framebuffer will require writes across large regions of the backing
     memory. By binning the geometry by tile, the GPU enforces a localization of writes.
 
     A second important difference: in the desktop case, the writes and reads happen from video memory. Mobile GPUs add
     an additional on-chip cache that
     is only loaded and flushed once during processing of the tile. This further improves efficiency due to the locality
-    of this cache. A
+    of this cache. Expanding on the psuedocode from above, we can add the required load and store between tile and video memory.
   </p>
 
-  <p class="code">for (var tile in tiles):<br>
+  <p class="code">
+    for (var tile in tiles):<br>
     &nbsp;&nbsp;var tile_memory = load(video_memory, load_action):<br>
-    &nbsp;&nbsp;for (var triangle in triangles):<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;if (triangle in tile):<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment, tile_memory)<br>
+    &nbsp;&nbsp;for (var triangle in triangles where triangle in tile):<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;rasterize(fragment, tile_memory)<br>
     &nbsp;&nbsp;store(video_memory, tile_memory, store_action)<br>
   </p>
 
@@ -62,15 +69,14 @@
     memory. As a result, 4x MSAA is "free" (from a memory perspective) on TBDR architectures.
   </p>
 
-  <h3>Programmable Blending</h3>
+  <h3>Exploting Tile Memory to Implement Programmable Blending</h3>
   <p>
     Because the tile memory is on-chip and easily accessible, reads are much faster than they would be from video
     memory. Some vendors expose the capability to read the color value of the current framebuffer. This is called
     <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_shader_framebuffer_fetch.txt">framebuffer fetch</a>
     on GLES
     drivers. With access to the framebuffer value, arbitrary blend equations (beyond the available fixed set Porter-Duff
-    blends) can be
-    implemented, such as the "Photoshop" blend modes like "color burn" or "color dodge."
+    blends) can be implemented, such as the "Photoshop" blend modes like "color burn" or "color dodge."
   </p>
   <p class="code">
     #extension GL_EXT_shader_framebuffer_fetch: require<br>
@@ -92,6 +98,13 @@
   <aside>Note: While blending using fixed equations may be implemented as a read from video memory, it doesn't necessarily
     imply that the fragment processor is reading from video memory.</aside>
 
+
+  <hr>
+
+  <h3>References</h3>
+  <ul>
+    <li></li>
+  </ul>
 </body>
 
 </html>
