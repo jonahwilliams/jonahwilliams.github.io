@@ -1,0 +1,51 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Tile-Based Deferred Renderers (TBDR) PT 1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <nav>
+    <a href="/">The Jonah Blog</a> |
+    <a href="https://github.com/jonahwilliams">Github</a> |
+    <a href="https://github.com/jonahwilliams/jonahwilliams.github.io">Blog Source</a>
+  </nav>
+
+  <hr>
+
+  <h1 class="title">Tile-Based Deferred Renderers (TBDR) Pt 2</h1>
+
+  <h3>Exploting Tile Memory to Implement Programmable Blending</h3>
+  <p>
+    Because the tile memory is on-chip and easily accessible, reads are much faster than they would be from video
+    memory. Some vendors expose the capability to read the color value of the current framebuffer. This is called
+    <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_shader_framebuffer_fetch.txt">framebuffer fetch</a>
+    on GLES
+    drivers. With access to the framebuffer value, arbitrary blend equations (beyond the available fixed set Porter-Duff
+    blends) can be implemented, such as the "Photoshop" blend modes like "color burn" or "color dodge."
+  </p>
+  <p class="code">
+    #extension GL_EXT_shader_framebuffer_fetch: require<br>
+    <br>
+    in vec4 v_color;<br>
+    <br>
+    out vec4 frag_color;<br>
+    <br>
+    void main() {<br>
+    &nbsp;&nbsp;frag_color = Blend(v_color, gl_LastFragData);<br>
+    }<br>
+  </p>
+
+  <p>The alternative to framebuffer fetch requires multiple render passes: first everything before the blend must be
+    rendered to an offscreen, then fed through the blend shader and rendered to the onscreen framebuffer. This requires
+    a substantial amount of video memory throughput as the entire framebuffer has to be round tripped through video
+    memory.</p>
+
+  <aside>Note: While blending using fixed equations may be implemented as a read from video memory, it doesn't necessarily
+    imply that the fragment processor is reading from video memory.</aside>
+</body>
+</html>

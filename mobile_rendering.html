@@ -43,13 +43,15 @@
   </p>
 
   <p>While the mobile approach seems more complicated, it allows for more efficient memory access patterns. In the
-    desktop approach, a triangle that coverages a large % of the framebuffer will require writes across large regions of the backing
+    desktop approach, a triangle that coverages a large % of the framebuffer will require writes across large regions of
+    the backing
     memory. By binning the geometry by tile, the GPU enforces a localization of writes.
 
     A second important difference: in the desktop case, the writes and reads happen from video memory. Mobile GPUs add
     an additional on-chip cache that
     is only loaded and flushed once during processing of the tile. This further improves efficiency due to the locality
-    of this cache. Expanding on the psuedocode from above, we can add the required load and store between tile and video memory.
+    of this cache. Expanding on the psuedocode from above, we can add the required load and store between tile and video
+    memory.
   </p>
 
   <p class="code">
@@ -69,41 +71,87 @@
     memory. As a result, 4x MSAA is "free" (from a memory perspective) on TBDR architectures.
   </p>
 
-  <h3>Exploting Tile Memory to Implement Programmable Blending</h3>
+  <h3>Working with Tile Memory</h3>
   <p>
-    Because the tile memory is on-chip and easily accessible, reads are much faster than they would be from video
-    memory. Some vendors expose the capability to read the color value of the current framebuffer. This is called
-    <a href="https://registry.khronos.org/OpenGL/extensions/EXT/EXT_shader_framebuffer_fetch.txt">framebuffer fetch</a>
-    on GLES
-    drivers. With access to the framebuffer value, arbitrary blend equations (beyond the available fixed set Porter-Duff
-    blends) can be implemented, such as the "Photoshop" blend modes like "color burn" or "color dodge."
+    Tile memory can be used as the backing memory for attachments that are used during a render pass but do not need to
+    be stored. Depth/Stencil attachments are frequently discarded at the end of a render pass and are a great candidate
+    for usage in tile memory. Like I mentioned above, MSAA normally requires the allocation of a color attachment that
+    is n-times as big, but tile memory can be used to store it instead.
   </p>
+
+  <p>
+    In Both Metal and Vulkan, we can use tile memory for an attachment by allocating special kinds of Textures. In
+    Metal, this is called a "Memoryless" texture and in Vulkan it is called a "Lazily allocated" texture. The
+    difference: Vulkan allows the drivers to spill to video memory if there is insufficient tile memory. Impeller
+    refers to both of these as "transient" attachments.
+
+    The following attachment configuration creates two textures, one resolve texture and a 4x MSAA transient attachment.
+    This won't actually
+    allocate any storage space for the MSAA texture. instead this reserves a portion of the tile memory, approximately
+    <span class="inline-code">tile_size * pixel_format_size * 4</span> bytes.
+  </p>
+
   <p class="code">
-    #extension GL_EXT_shader_framebuffer_fetch: require<br>
+    TextureDescriptor resolve_desc;<br>
+    resolve_desc.storage_mode = StorageMode::kDevicePrivate;<br>
+    resolve_desc.type = TextureType::kTexture2D;<br>
+    resolve_desc.sample_count = SampleCount::kCount1;<br>
+    resolve_desc.format = PixelFormat::kB8G8R8A8UNormInt;<br>
+    resolve_desc.size = {400, 400};<br>
+    auto resolve_texture = allocator.CreateTexture(resolve_desc);<br>
     <br>
-    in vec4 v_color;<br>
     <br>
-    out vec4 frag_color;<br>
+    TextureDescriptor msaa_desc;<br>
+    msaa_desc.storage_mode = StorageMode::kDeviceTransient;<br>
+    msaa_desc.type = TextureType::kTexture2DMultisample;<br>
+    msaa_desc.sample_count = SampleCount::kCount4;<br>
+    msaa_desc.format = PixelFormat::kB8G8R8A8UNormInt;<br>
+    msaa_desc.size = {400, 400};<br>
+    auto msaa_texture = allocator.CreateTexture(msaa_desc);<br>
     <br>
-    void main() {<br>
-    &nbsp;&nbsp;frag_color = Blend(v_color, gl_LastFragData);<br>
-    }<br>
+    <br>
+    ColorAttachment color0;<br>
+    color0.texture = msaa_tex;<br>
+    color0.clear_color = Color::Black();<br>
+    color0.load_action = LoadAction::kClear;<br>
+    color0.store_action = StoreAction::kMultisampleResolve;<br>
+    color0.resolve_texture = resolve_texture;<br>
   </p>
 
-  <p>The alternative to framebuffer fetch requires multiple render passes: first everything before the blend must be
-    rendered to an offscreen, then fed through the blend shader and rendered to the onscreen framebuffer. This requires
-    a substantial amount of video memory throughput as the entire framebuffer has to be round tripped through video
-    memory.</p>
+  <p>
+    And of course, any additional attachments that we create which are memoryless would be backed by tile memory ...
+    right
+    up until the point at which we run out of tile memory. Apple helpfully provides a table of how much tile memory each
+    generation of their TBDR
+    GPUs has, whereas with Vulkan devices I'm not aware of any technique to figure out when the attachments will begin
+    spilling to video memory. Some of the early generation Android Vulkan devices don't seem to have a heap for lazily
+    allocated memory. This either means that they aren't TBDR (unlikely), or only have enough tile memory to store the
+    single sampled color attachment of the default framebuffer pixel format.
+  </p>
 
-  <aside>Note: While blending using fixed equations may be implemented as a read from video memory, it doesn't necessarily
-    imply that the fragment processor is reading from video memory.</aside>
+  <p>
+    Tile memory is limited in how data can be accessed from it. Because there is only ever a small region of the
+    framebuffer
+    that is active in the tile memory at time. A convolution filter that samples from adjacent pixels cannot be
+    expressed
+    as an operation over attachments: we cannot guarantee that the adjacent
+    pixel is in the current tile. This isn't really an issue for normal usage like multisampling, depth/stencil, or
+    lighting passes.
+  </p>
 
-
+  <p>
+    Of course, we can do a lot of <i>fun</i> things with tile memory too, but I'll save that for another post.
+  </p>
   <hr>
 
   <h3>References</h3>
   <ul>
-    <li></li>
+    <li><a
+        href="https://developer.apple.com/documentation/metal/mtlstoragemode/mtlstoragemodememoryless?language=objc">developer.apple.com/documentation/metal/mtlstoragemode/mtlstoragemodememoryless</a>
+    </li>
+    <li><a
+        href="https://docs.vulkan.org/guide/latest/memory_allocation.html#_lazily_allocated_memory">docs.vulkan.org/guide/latest/memory_allocation</a>
+    </li>
   </ul>
 </body>
 

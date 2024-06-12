@@ -5,6 +5,10 @@
     padding: 14px;
 }
 
+.inline-code {
+    font-family: monospace;
+}
+
 .title {
     text-align:center;
 }
