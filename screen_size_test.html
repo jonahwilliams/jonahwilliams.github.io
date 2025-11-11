@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+    <title>Screen Size Test</title>
+</head>
+<body>
+    <div id="foo"></div>
+    <script type="text/javascript">
+        function computeSize() {
+            var width = window.screen.width;
+            var height = window.screen.height;
+            document.getElementById("foo").textContent = "Size is " + width + " x " + height;
+            console.log("updated");
+        }
+        computeSize();
+        setInterval(computeSize, 1000);
+    </script>
+</body>
