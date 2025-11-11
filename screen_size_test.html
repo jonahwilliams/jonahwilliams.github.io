@@ -4,14 +4,15 @@
 </head>
 <body>
     <div id="foo"></div>
+    <div id="bar"></div>
     <script type="text/javascript">
         function computeSize() {
             var width = window.screen.width;
             var height = window.screen.height;
             document.getElementById("foo").textContent = "Size is " + width + " x " + height;
-            console.log("updated");
+            document.getElementById("bar").textContent = "DevicePixelRatio is " + window.devicePixelRatio;
         }
         computeSize();
-        setInterval(computeSize, 1000);
+        setInterval(computeSize, 5000);
     </script>
 </body>
